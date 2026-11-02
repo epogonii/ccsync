@@ -1,0 +1,27 @@
+{
+  "description": "Starts a background sync when a session starts or ends, if that is turned on in ccsync, and tells you about a failed sync or new conflicts.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"${CLAUDE_PLUGIN_ROOT}/scripts/ccsync.py\" hook session-start",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"${CLAUDE_PLUGIN_ROOT}/scripts/ccsync.py\" hook session-end",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

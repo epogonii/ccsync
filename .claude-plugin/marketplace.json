@@ -1,0 +1,14 @@
+{
+  "name": "ccsync",
+  "owner": {
+    "name": "Evghenii Pogonii"
+  },
+  "description": "Machine-to-machine sync for Claude Code. One plugin: ccsync.",
+  "plugins": [
+    {
+      "name": "ccsync",
+      "source": "./",
+      "description": "Two-way sync of Claude Code sessions, memory, prompt history and chosen files between your machines over ssh, with a guided setup."
+    }
+  ]
+}

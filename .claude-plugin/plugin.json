@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "ccsync",
+  "description": "Two-way sync of Claude Code sessions, memory, prompt history and the files you choose between your machines, straight over ssh. No cloud, no git repo in between: sessions continued on both machines are merged, project paths are rewritten for the other machine, and nothing is lost without a copy.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Evghenii Pogonii"
+  },
+  "homepage": "https://github.com/epogonii/ccsync",
+  "repository": "https://github.com/epogonii/ccsync",
+  "license": "MIT",
+  "keywords": [
+    "sync",
+    "sessions",
+    "history",
+    "memory",
+    "ssh",
+    "rsync",
+    "backup"
+  ]
+}

@@ -30,9 +30,12 @@ works) and do only those steps. Otherwise go through all of them.
 
 ## 1. The other machine
 
-Ask how to reach it. Offer up to three hosts from `ssh_hosts` (label: the
-alias, description: user@hostname) and say they can type `user@host` or an IP
-address instead. A machine can have more than one address (its name on the
+Ask how to reach it. Build the options only from the `detect` output, never
+from memory or earlier conversation: the user is choosing, not confirming a
+guess. Offer up to three hosts from `ssh_hosts` (label: the alias,
+description: user@hostname) and say they can type `user@host` or an IP
+address instead. With no `ssh_hosts`, the options are "Another machine over
+ssh" (they type the address next) and "A folder or a disk". A machine can have more than one address (its name on the
 home network, a VPN address); ccsync tries them in order, so ask whether there
 is a second one.
 

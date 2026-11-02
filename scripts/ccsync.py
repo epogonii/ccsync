@@ -879,7 +879,7 @@ def cmd_run(args, from_command):
     if not cfg["peers"]:
         if auto:
             return 0
-        raise UserError("no peers yet. Add one: /ccsync peer add <name> <user@host>")
+        raise UserError("no machines to sync with yet. Set one up: /ccsync:setup")
     unknown = [p for p in peers if p not in cfg["peers"]]
     if unknown:
         raise UserError("no peer named %s. Peers: %s" % (", ".join(unknown), ", ".join(cfg["peers"])))
@@ -943,7 +943,7 @@ def cmd_status():
         print("Config problems:\n  " + "\n  ".join(probs))
         return 1
     if not cfg["peers"]:
-        print("No peers yet. Add one: /ccsync peer add <name> <user@host> [<user@other-address>]")
+        print("No machines to sync with yet. Set one up: /ccsync:setup")
         return 0
     for name in cfg["peers"]:
         pc = peer_conf(cfg, name)

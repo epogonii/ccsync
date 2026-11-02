@@ -85,7 +85,8 @@ hand; `/ccsync config check` validates it. A full example:
       "files": ["skills"]
     }
   },
-  "sync": {"transcripts": true, "memory": true, "history": true, "memory_deletions": true},
+  "sync": {"transcripts": true, "memory": true, "history": true, "memory_deletions": true,
+           "plugins": true},
   "projects": {"include": [], "exclude": ["~/clients/*"]},
   "files": {
     "skills": {"path": "skills", "delete": true},
@@ -108,7 +109,10 @@ peer override the shared ones. Also: `python` (the interpreter there),
 `claude_dir` (when it is not `~/.claude` there), `after`, `ssh_options`.
 
 **sync.** What of Claude Code's own data travels. `memory_deletions` carries
-deleted memory notes over.
+deleted memory notes over. `plugins` (off by default) makes each machine
+install the plugins the other one has, with `claude plugin install` and the
+marketplace they come from; it never uninstalls, and a plugin whose
+marketplace is a local folder is left out.
 
 **projects.** Globs over project paths, like `~/work/*`. Claude Code names a
 project folder after its path with `/` turned into `-`, so `*` also matches

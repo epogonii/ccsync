@@ -55,7 +55,10 @@ Ask with multiSelect, split so that no question has more than 4 options:
 
 - Claude Code data: sessions (`claude --resume` finds them on both machines),
   memory notes (what Claude remembers per project), prompt history (what the
-  up arrow brings back). Mention the sizes from `claude_data`.
+  up arrow brings back), plugins (each machine installs the plugins the other
+  has, through `claude plugin install`; nothing is uninstalled, plugins from a
+  marketplace in a local folder are left out). Mention the sizes and counts
+  from `claude_data`.
 - The user's setup: items from `candidates`, each with its size and the `what`
   text. Keep the warnings: settings.json holds paths and hooks that must work
   on the other machine too; hooks are code that runs by itself.
@@ -66,7 +69,7 @@ Then ask whether deleting a memory note or a synced file on one machine should
 delete it on the other too. A deleted or replaced copy is kept for 30 days in
 `~/.claude/ccsync/replaced/` either way.
 
-Config: `sync.transcripts`, `sync.memory`, `sync.history`,
+Config: `sync.transcripts`, `sync.memory`, `sync.history`, `sync.plugins`,
 `sync.memory_deletions` (true or false). Each chosen item becomes a set under
 `files`: a folder `{"path": "skills"}`, a single file `{"file": "CLAUDE.md"}`,
 plus `"delete": true` when deletions should carry over. Paths are relative to

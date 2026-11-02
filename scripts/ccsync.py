@@ -30,7 +30,8 @@ REMOTE_HELPER = ".cache/ccsync/side-%s.py" % hashlib.sha256(SIDE_BYTES).hexdiges
 
 DEFAULTS = {
     "peers": {},
-    "sync": {"transcripts": True, "memory": True, "history": True, "memory_deletions": True},
+    "sync": {"transcripts": True, "memory": True, "history": True, "memory_deletions": True,
+             "plugins": False},
     "projects": {"include": [], "exclude": []},
     "files": {},
     "after": [],
@@ -401,6 +402,10 @@ def describe(s):
 
     listing("files from %s" % name, s.get("files_in", []))
     listing("files to %s" % name, s.get("files_out", []))
+    listing("plugins from %s" % name, s.get("plugins_in", []))
+    listing("plugins to %s" % name, s.get("plugins_out", []))
+    listing("plugins left out, their marketplace is a local folder", s.get("plugins_skipped", []))
+    listing("plugins that did not install", s.get("plugins_failed", []))
     listing("deleted here", [os.path.basename(p) for p in s.get("deleted_in", [])])
     listing("deleted on %s" % name, [os.path.basename(p) for p in s.get("deleted_out", [])])
     listing("kept, changed after the last sync",
@@ -620,6 +625,59 @@ def plan_sets(sets, here, there, push, pull):
     return out, into, clash
 
 
+def market_arg(source):
+    # what `claude plugin marketplace add` takes; a local folder means nothing elsewhere
+    source = source or {}
+    kind = source.get("source")
+    if kind == "github":
+        return source.get("repo")
+    if kind in ("git", "url"):
+        return source.get("url")
+    return None
+
+
+def plan_plugins(src, dst):
+    markets, plugins, skipped = [], [], []
+    for pid in src["plugins"]:
+        if pid in dst["plugins"]:
+            continue
+        m = pid.split("@", 1)[1] if "@" in pid else None
+        if m and m not in dst["marketplaces"] and m in src["marketplaces"]:
+            arg = market_arg(src["marketplaces"][m])
+            if not arg:
+                skipped.append(pid)
+                continue
+            if arg not in markets:
+                markets.append(arg)
+        plugins.append(pid)
+    return markets, plugins, skipped
+
+
+def sync_plugins(s, loc, rem, rq, name, push, pull, dry, tries):
+    here = call(loc, "plugins", {})
+    there = call(rem, "plugins", rq({}), tries)
+    failed, skipped = [], []
+    for ok, src, dst, sd, key, req_of in ((push, here, there, rem, "plugins_out", rq),
+                                          (pull, there, here, loc, "plugins_in", lambda r: r)):
+        if not ok:
+            continue
+        markets, plugins, skip = plan_plugins(src, dst)
+        skipped += skip
+        s[key] = plugins
+        if dry or not plugins:
+            continue
+        if not dst.get("claude"):
+            failed.append("claude is not installed on %s" % ("here" if sd is loc else name))
+            continue
+        res = call(sd, "plugins_install", req_of({"marketplaces": markets, "plugins": plugins}),
+                   tries if sd is rem else 1)
+        for r in res["results"]:
+            if r["code"] != 0:
+                failed.append("%s (%s)" % (r["what"], tail(r["out"], 1)))
+    s["plugins_skipped"] = skipped
+    s["plugins_failed"] = failed
+
+
 def sync_peer(cfg, name, log, dry=False, full=False, auto=False, reason="manual"):
     pc = peer_conf(cfg, name)
     start = time.time()
@@ -783,6 +841,9 @@ def locked_sync(cfg, pc, s, loc, rem, li, ri, log, dry, full, tries):
             transfer(loc, None, rem, rcd, out, sets_req, stamp)
             transfer(rem, rcd, loc, None, into, sets_req, stamp)
 
+    if want.get("plugins"):
+        sync_plugins(s, loc, rem, rq, name, push, pull, dry, tries)
+
     if dry:
         return
     failed = []
@@ -919,7 +980,7 @@ def cmd_run(args, from_command):
 
 def what_syncs(cfg, pc=None):
     want = (pc or {}).get("sync") or cfg["sync"]
-    bits = [k for k in ("transcripts", "memory", "history") if want[k]]
+    bits = [k for k in ("transcripts", "memory", "history", "plugins") if want.get(k)]
     if want["memory"] and want["memory_deletions"]:
         bits[bits.index("memory")] = "memory (with deletions)"
     sets = pc["sets"] if pc else cfg["files"]
@@ -1186,7 +1247,8 @@ def cmd_detect():
                          "claude_dir": short(cd), "timer": timer},
         "claude_data": {"projects": len(names), "transcript_files": files,
                         "projects_size": human(size), "memory_notes": len(memory),
-                        "history_lines": history},
+                        "history_lines": history,
+                        "plugins": len(side.op_plugins({"claude_dir": cd})["plugins"])},
         "candidates": known,
         "other_in_claude_dir": other,
         "ssh_hosts": ssh_hosts(),

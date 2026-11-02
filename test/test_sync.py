@@ -222,6 +222,18 @@ class Pair(unittest.TestCase):
             time.sleep(0.5)
         self.assertTrue(os.path.exists(self.tb("s2.jsonl")))
 
+    def test_plugin_plan(self):
+        import ccsync
+        here = {"plugins": ["a@gh", "b@local", "c@shared", "d@official"],
+                "marketplaces": {"gh": {"source": "github", "repo": "me/gh"},
+                                 "local": {"source": "directory", "path": "/x"},
+                                 "shared": {"source": "git", "url": "https://example.com/s.git"}}}
+        there = {"plugins": ["d@official"], "marketplaces": {"shared": {}}}
+        markets, plugins, skipped = ccsync.plan_plugins(here, there)
+        self.assertEqual(markets, ["me/gh"])
+        self.assertEqual(plugins, ["a@gh", "c@shared"])
+        self.assertEqual(skipped, ["b@local"])
+
     def test_bad_config_is_refused(self):
         self.config({"files": {"x": {"path": "projects"}}})
         out = self.run_cli("run", "bob", ok=False)

@@ -636,6 +636,53 @@ def op_prune(req):
     return {"removed": removed}
 
 
+def find_claude():
+    extra = [os.path.join(home(), ".local", "bin"), "/opt/homebrew/bin", "/usr/local/bin"]
+    return shutil.which("claude", path=os.pathsep.join([os.environ.get("PATH", "")] + extra))
+
+
+def read_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def op_plugins(req):
+    pdir = os.path.join(claude_dir(req), "plugins")
+    installed = read_json(os.path.join(pdir, "installed_plugins.json"), {}).get("plugins", {})
+    known = read_json(os.path.join(pdir, "known_marketplaces.json"), {})
+    return {
+        "plugins": sorted(p for p, entries in installed.items()
+                          if any(e.get("scope") == "user" for e in entries or [])),
+        "marketplaces": {n: (v or {}).get("source") for n, v in known.items()},
+        "claude": find_claude(),
+    }
+
+
+def op_plugins_install(req):
+    claude = find_claude()
+    if not claude:
+        return {"results": [{"what": "claude", "code": 127, "out": "claude is not installed here"}]}
+    env = dict(os.environ)
+    if req.get("claude_dir"):
+        env["CLAUDE_CONFIG_DIR"] = claude_dir(req)
+    results = []
+    steps = [("marketplace " + m, [claude, "plugin", "marketplace", "add", m])
+             for m in req.get("marketplaces") or []]
+    steps += [(p, [claude, "plugin", "install", p, "--scope", "user"]) for p in req.get("plugins") or []]
+    for what, cmd in steps:
+        try:
+            p = subprocess.run(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, timeout=600)
+            results.append({"what": what, "code": p.returncode,
+                            "out": p.stdout.decode(errors="replace")[-1500:]})
+        except subprocess.TimeoutExpired:
+            results.append({"what": what, "code": -1, "out": "timed out after 600 s"})
+    return {"results": results}
+
+
 def op_save(req):
     cdir = claude_dir(req)
     st = read_state(cdir, req["peer_id"])
@@ -647,7 +694,7 @@ def op_save(req):
 OPS = {
     "info": op_info, "lock": op_lock, "unlock": op_unlock, "scan": op_scan,
     "delete": op_delete, "merge": op_merge, "after": op_after, "prune": op_prune,
-    "save": op_save,
+    "save": op_save, "plugins": op_plugins, "plugins_install": op_plugins_install,
 }
 
 
